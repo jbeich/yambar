@@ -43,116 +43,113 @@ exposable_destroy(struct exposable *exposable)
 static int
 begin_expose(struct exposable *exposable)
 {
+    static bool initialized = false;
+    static bool fcft_can_do_text_shaping;
+
+    if (!initialized) {
+        enum fcft_capabilities caps = fcft_capabilities();
+        fcft_can_do_text_shaping = caps & FCFT_CAPABILITY_GRAPHEME_SHAPING;
+        initialized = true;
+    }
+
     struct eprivate *e = exposable->private;
     struct fcft_font *font = exposable->particle->font;
 
     e->glyphs = NULL;
+    e->kern_x = NULL;
     e->num_glyphs = 0;
 
     size_t chars = mbstowcs(NULL, e->text, 0);
+
     if (chars != (size_t)-1 && chars > 0) {
         wchar_t wtext[chars + 1];
         mbstowcs(wtext, e->text, chars + 1);
 
-        e->glyphs = malloc(chars * sizeof(e->glyphs[0]));
-        e->kern_x = calloc(chars, sizeof(e->kern_x[0]));
+        struct {
+            const wchar_t *cluster;
+            size_t len;
+        } clusters[chars];
 
-#if defined(YAMBAR_TEXT_SHAPING)
-        static bool initialized = false;
-        static bool can_do_text_shaping;
-
-        if (!initialized) {
-            enum fcft_capabilities caps = fcft_capabilities();
-            can_do_text_shaping = caps & FCFT_CAPABILITY_GRAPHEME_SHAPING;
-            initialized = true;
-        }
+        size_t cluster_count = 0;
 
         /*
-         * TODO: use fcft_text_run_rasterize() (or whatever the
-         * function will be called) once implemented in fcft.
+         * First, do grapheme cluster segmentation.
          */
 
-        if (can_do_text_shaping) {
-            utf8proc_int32_t state = 0;
-            size_t last_len = 0;
-            size_t len = 1;
-            const wchar_t *cluster = &wtext[0];
+#if defined(YAMBAR_TEXT_SHAPING)
+        utf8proc_int32_t state = 0;
+        size_t len = 1;
+        const wchar_t *cluster = &wtext[0];
 
-            for (size_t i = 1; i < chars; i++) {
-                if (utf8proc_grapheme_break_stateful(wtext[i - 1], wtext[i], &state)) {
-                    /*
-                     * wtext[i] is a grapheme break, meaning we need
-                     * to flush the previous grapheme, *not* including
-                     * wtext[i].
-                     */
+        for (size_t i = 1; i < chars; i++) {
+            if (utf8proc_grapheme_break_stateful(wtext[i - 1], wtext[i], &state) &&
+                wtext[i - 1] != 0x200d /* ZWJ */)
+            {
+                clusters[cluster_count].cluster = cluster;
+                clusters[cluster_count].len = len;
+                cluster_count++;
 
-                    if (len == 1) {
-                        const struct fcft_glyph *glyph = fcft_glyph_rasterize(
-                            font, *cluster, FCFT_SUBPIXEL_NONE);
+                state = 0;
+                len = 1;
+                cluster = &wtext[i];
+            } else
+                len++;
+        }
 
-                        if (glyph != NULL) {
-                            e->glyphs[e->num_glyphs++] = glyph;
+        clusters[cluster_count].cluster = cluster;
+        clusters[cluster_count].len = len;
+        cluster_count++;
+#else
+        for (size_t i = 0; i < chars; i++) {
+            clusters[i].cluster = &wtext[i];
+            clusters[i].len = 1;
+        }
+        cluster_count = chars;
+#endif
 
-                            if (last_len == 1) {
-                                fcft_kerning(
-                                    font, *(cluster - 1), *cluster,
-                                    &e->kern_x[e->num_glyphs - 1], NULL);
-                            }
-                        }
-                    } else {
-                        const struct fcft_grapheme *grapheme
-                            = fcft_grapheme_rasterize(
-                                font, len, cluster, FCFT_SUBPIXEL_NONE);
+        /*
+         * Now rasterize the graphemes.
+         */
 
-                        for (size_t j = 0; j < grapheme->count; j++)
-                            e->glyphs[e->num_glyphs++] = grapheme->glyphs[j];
-                    }
+        e->glyphs = calloc(chars, sizeof(e->glyphs[0]));
+        e->kern_x = calloc(chars, sizeof(e->kern_x[0]));
 
-                    last_len = len;
-                    cluster = &wtext[i];
-                    len = 1;
-                } else
-                    len++;
-            }
+        for (size_t i = 0; i < cluster_count; i++) {
+            const wchar_t *cluster = clusters[i].cluster;
+            const size_t len = clusters[i].len;
 
-            if (len == 1) {
+            const wchar_t *last_cluster = i > 0 ? clusters[i - 1].cluster : NULL;
+            const size_t last_len = i > 0 ? clusters[i - 1].len : 0;
+
+            if (fcft_can_do_text_shaping && len > 1) {
+                const struct fcft_grapheme *grapheme
+                    = fcft_grapheme_rasterize(
+                        font, len, cluster, FCFT_SUBPIXEL_NONE);
+
+                if (grapheme == NULL)
+                    continue;
+
+                for (size_t j = 0; j < grapheme->count; j++)
+                    e->glyphs[e->num_glyphs++] = grapheme->glyphs[j];
+            } else {
+                assert(len == 1);
                 const struct fcft_glyph *glyph = fcft_glyph_rasterize(
                     font, *cluster, FCFT_SUBPIXEL_NONE);
-                if (glyph != NULL) {
-                    e->glyphs[e->num_glyphs++] = glyph;
-                    if (last_len == 1) {
-                        fcft_kerning(
-                            font, *(cluster - 1), *cluster,
-                            &e->kern_x[e->num_glyphs - 1], NULL);
-                    }
-                }
-            } else {
-                const struct fcft_grapheme *grapheme = fcft_grapheme_rasterize(
-                    font, len, cluster, FCFT_SUBPIXEL_NONE);
-
-                if (grapheme != NULL) {
-                    for (size_t j = 0; j < grapheme->count; j++)
-                        e->glyphs[e->num_glyphs++] = grapheme->glyphs[j];
-                }
-            }
-        } else
-#endif
-        {
-            /* Convert text to glyph masks/images. */
-            for (size_t i = 0; i < chars; i++) {
-                const struct fcft_glyph *glyph = fcft_glyph_rasterize(
-                    font, wtext[i], FCFT_SUBPIXEL_NONE);
 
                 if (glyph == NULL)
                     continue;
 
                 e->glyphs[e->num_glyphs++] = glyph;
 
-                if (i == 0)
+                if (last_len != 1)
                     continue;
 
-                fcft_kerning(font, wtext[i - 1], wtext[i],
-                             &e->kern_x[e->num_glyphs - 1], NULL);
+                assert(last_cluster != NULL);
+                assert(last_len == 1);
+
+                fcft_kerning(
+                    font, *last_cluster, *cluster,
+                    &e->kern_x[e->num_glyphs - 1], NULL);
             }
         }
     }
