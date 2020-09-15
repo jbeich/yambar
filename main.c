@@ -275,6 +275,8 @@ main(int argc, char *const *argv)
 
     log_init(log_colorize, log_syslog, LOG_FACILITY_DAEMON, LOG_CLASS_WARNING);
 
+    fcft_set_scaling_filter(FCFT_SCALING_FILTER_LANCZOS3);
+
     const struct sigaction sa = {.sa_handler = &signal_handler};
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
