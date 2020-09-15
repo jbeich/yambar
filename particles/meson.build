@@ -1,4 +1,4 @@
-particle_sdk = declare_dependency(dependencies: [pixman, tllist, fcft])
+particle_sdk = declare_dependency(dependencies: [pixman, utf8proc, tllist, fcft])
 
 particles = []
 foreach particle : ['empty', 'list', 'map', 'progress-bar', 'ramp', 'string']

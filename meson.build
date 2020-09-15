@@ -45,6 +45,11 @@ dl = cc.find_library('dl')
 threads = dependency('threads')
 pixman = dependency('pixman-1')
 yaml = dependency('yaml-0.1')
+utf8proc = dependency('libutf8proc', required: get_option('text-shaping'))
+
+if utf8proc.found()
+  add_project_arguments('-DYAMBAR_TEXT_SHAPING=1', language: 'c')
+endif
 
 # X11/XCB dependencies
 xcb_aux = dependency('xcb-aux', required: get_option('backend-x11'))
@@ -148,6 +153,7 @@ summary(
     'XCB backend': backend_x11,
     'Wayland backend': backend_wayland,
     'Core modules as plugins': plugs_as_libs,
+    'Text shaping': utf8proc.found(),
   },
   bool_yn: true
 )
