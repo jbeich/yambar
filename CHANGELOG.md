@@ -6,6 +6,15 @@
 
 ## Unreleased
 ### Added
+
+* Support for grapheme shaping. Yambar must be linked against
+[utf8proc](https://github.com/JuliaStrings/utf8proc) **and**
+[fcft](https://codeberg.org/dnkl/fcft) built with
+[HarfBuzz](https://github.com/harfbuzz/harfbuzz) support. This can be
+disabled at build-time with the `-Dtext-shaping=disabled|enabled|auto`
+meson command line option.
+
+
 ### Deprecated
 ### Removed
 ### Fixed
