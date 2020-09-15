@@ -67,6 +67,11 @@ begin_expose(struct exposable *exposable)
             initialized = true;
         }
 
+        /*
+         * TODO: use fcft_text_run_rasterize() (or whatever the
+         * function will be called) once implemented in fcft.
+         */
+
         if (can_do_text_shaping) {
             utf8proc_int32_t state = 0;
             size_t last_len = 0;
