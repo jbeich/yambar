@@ -17,6 +17,11 @@ meson command line option.
 
 ### Deprecated
 ### Removed
+### Changed
+
+* Yambar now requires fcft >= 2.3.0.
+
+
 ### Fixed
 ### Security
 ### Contributors
