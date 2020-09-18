@@ -124,7 +124,7 @@ begin_expose(struct exposable *exposable)
             if (fcft_can_do_text_shaping && len > 1) {
                 const struct fcft_grapheme *grapheme
                     = fcft_grapheme_rasterize(
-                        font, len, cluster, FCFT_SUBPIXEL_NONE);
+                        font, len, cluster, 0, NULL, FCFT_SUBPIXEL_NONE);
 
                 if (grapheme == NULL)
                     continue;
