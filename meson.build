@@ -50,6 +50,7 @@ m = cc.find_library('m')
 threads = dependency('threads')
 pixman = dependency('pixman-1')
 yaml = dependency('yaml-0.1')
+libepoll = dependency('epoll-shim', required: false)
 
 # X11/XCB dependencies
 xcb_aux = dependency('xcb-aux', required: get_option('backend-x11'))
@@ -120,7 +121,7 @@ yambar = executable(
   'tag.c', 'tag.h',
   'yml.c', 'yml.h',
   version,
-  dependencies: [bar, pixman, yaml, threads, dl, tllist, fcft] +
+  dependencies: [bar, pixman, yaml, libepoll, threads, dl, tllist, fcft] +
                 decorations + particles + modules,
   build_rpath: '$ORIGIN/modules:$ORIGIN/decorations:$ORIGIN/particles',
   export_dynamic: true,
