@@ -4,6 +4,7 @@ modules = []
 
 alsa = dependency('alsa')
 udev = dependency('libudev')
+inotify = dependency('libinotify', required: false)
 json = dependency('json-c')
 mpd = dependency('libmpdclient')
 xcb_xkb = dependency('xcb-xkb', required: get_option('backend-x11'))
@@ -16,7 +17,7 @@ mod_data = {
   'clock': [[], []],
   'i3': [['i3-common.c', 'i3-common.h'], [dynlist, json]],
   'label': [[], []],
-  'mpd': [[], [mpd]],
+  'mpd': [[], [inotify, mpd]],
   'network': [[], []],
   'removables': [[], [dynlist, udev]],
   'script': [[], []],
