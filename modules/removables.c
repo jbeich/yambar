@@ -23,6 +23,12 @@
 #include "../particles/dynlist.h"
 #include "../plugin.h"
 
+#if defined(__DragonFly__) || defined(__FreeBSD__)
+/* Not implemented by libudev-devd yet */
+#define udev_device_get_devpath(dev) udev_device_get_property_value(dev, "DEVPATH")
+#define udev_enumerate_add_match_parent(enum, dev)
+#endif
+
 typedef tll(char *) mount_point_list_t;
 
 struct partition {
