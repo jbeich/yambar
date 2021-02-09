@@ -47,7 +47,7 @@ endif
 # Common dependencies
 dl = cc.find_library('dl')
 m = cc.find_library('m')
-threads = dependency('threads')
+threads = [dependency('threads'), cc.find_library('stdthreads', required: false)]
 pixman = dependency('pixman-1')
 yaml = dependency('yaml-0.1')
 libepoll = dependency('epoll-shim', required: false)
