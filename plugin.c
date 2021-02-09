@@ -39,7 +39,9 @@ EXTERN_MODULE(clock);
 EXTERN_MODULE(i3);
 EXTERN_MODULE(label);
 EXTERN_MODULE(mpd);
+#ifdef __linux__
 EXTERN_MODULE(network);
+#endif
 EXTERN_MODULE(removables);
 EXTERN_MODULE(river);
 EXTERN_MODULE(sway_xkb);
@@ -114,7 +116,9 @@ init(void)
     REGISTER_CORE_MODULE(i3, i3);
     REGISTER_CORE_MODULE(label, label);
     REGISTER_CORE_MODULE(mpd, mpd);
+#ifdef __linux__
     REGISTER_CORE_MODULE(network, network);
+#endif
     REGISTER_CORE_MODULE(removables, removables);
 #if defined(HAVE_PLUGIN_river)
     REGISTER_CORE_MODULE(river, river);

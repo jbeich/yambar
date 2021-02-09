@@ -18,11 +18,14 @@ mod_data = {
   'i3': [['i3-common.c', 'i3-common.h'], [dynlist, json]],
   'label': [[], []],
   'mpd': [[], [inotify, mpd]],
-  'network': [[], []],
   'removables': [[], [dynlist, udev]],
   'script': [[], []],
   'sway-xkb': [['i3-common.c', 'i3-common.h'], [dynlist, json]],
 }
+
+if host_machine.system() == 'linux'
+  mod_data += { 'network': [[], []] }
+endif
 
 if backend_x11
   mod_data += {
